@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Home Assistant Remote</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;500&display=swap');
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #4ade80;
+      --accent-dim: rgba(74, 222, 128, 0.12);
+      --text: #e2e8f0;
+      --text-dim: #64748b;
+      --danger: #f87171;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.25rem;
+      margin-bottom: 2.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    header h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      font-size: 1.25rem;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+    }
+
+    header span {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .groups {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 860px;
+    }
+
+    .group-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 0.75rem;
+    }
+
+    .button-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+
+    button {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.6rem 1.1rem;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    button.success {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    button.error {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(248, 113, 113, 0.1);
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #toast.ok  { color: var(--accent);  border-color: var(--accent); }
+    #toast.err { color: var(--danger);  border-color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>HA Remote</h1>
+    <span>local control panel</span>
+  </header>
+
+  <div class="groups">
+    {% set ns = namespace(offset=0) %}
+    {% for group, buttons in groups.items() %}
+    <div>
+      <div class="group-label">{{ group }}</div>
+      <div class="button-grid">
+        {% for btn in buttons %}
+        <button
+          data-index="{{ loop.index0 + ns.offset }}"
+          onclick="trigger(this)">
+          {{ btn.label }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% set ns.offset = ns.offset + buttons|length %}
+    {% endfor %}
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+    // Globaler Button-Index über alle Gruppen hinweg
+    // Jinja2 liefert loop.index0 pro Gruppe – wir berechnen den absoluten Index
+    // direkt beim Rendern über ein Namespace-Objekt (s. Template oben).
+    // Alternativ: wir nummerieren alle Buttons beim Laden durch.
+    document.querySelectorAll('button[data-index]').forEach((btn, i) => {
+      btn.dataset.index = i;
+    });
+
+    async function trigger(btn) {
+      const index = btn.dataset.index;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/trigger/${index}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (res.ok) {
+          flash(btn, 'success');
+          showToast(`✓ ${data.button}`, 'ok');
+        } else {
+          flash(btn, 'error');
+          showToast(`✗ ${data.detail}`, 'err');
+        }
+      } catch (e) {
+        flash(btn, 'error');
+        showToast('✗ Verbindungsfehler', 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function flash(btn, cls) {
+      btn.classList.add(cls);
+      setTimeout(() => btn.classList.remove(cls), 1200);
+    }
+
+    let toastTimer;
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.className = '', 2500);
+    }
+  </script>
+</body>
+</html>
