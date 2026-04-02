@@ -149,3 +149,55 @@ Buttons werden auf der Oberfläche nach `group` zusammengefasst und in der Reihe
 cd /opt/ha-remote
 git pull
 systemctl restart ha-remote
+
+
+## Remote Server Installation
+Schritt-für-Schritt:
+1. LXC Container in Proxmox erstellen
+Im Proxmox WebUI: Create CT → z.B. Ubuntu 22.04 Template wählen
+Empfohlene Ressourcen:
+
+RAM: 256 MB
+Disk: 4 GB
+CPU: 1 Core
+
+Wichtig: Eine statische IP vergeben, z.B. 192.168.1.50/24
+
+2. Im LXC Container einrichten
+apt update && apt install -y python3 python3-pip python3-venv git
+
+# Projektordner anlegen
+mkdir /opt/ha-remote && cd /opt/ha-remote
+
+# Dateien rüberkopieren (oder direkt erstellen)
+# Virtual Environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+3. Als Systemd-Service einrichten (damit es automatisch startet)
+nano /etc/systemd/system/ha-remote.service
+[Unit]
+Description=HA Remote Panel
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/ha-remote
+ExecStart=/opt/ha-remote/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+bashsystemctl daemon-reload
+systemctl enable ha-remote
+systemctl start ha-remote
+```
+
+---
+
+**4. Erreichbar im lokalen Netz**
+
+Danach ist die Seite für alle Geräte im Netz erreichbar unter:
+```
+http://192.168.1.50:8080
