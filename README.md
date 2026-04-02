@@ -144,3 +144,8 @@ Buttons werden auf der Oberfläche nach `group` zusammengefasst und in der Reihe
 |------------|--------------|
 | `HA_URL`   | Basis-URL der Home Assistant Instanz (ohne abschließenden `/`) |
 | `HA_TOKEN` | Long-Lived Access Token |
+
+## Remote Server Update
+cd /opt/ha-remote
+git pull
+systemctl restart ha-remote
