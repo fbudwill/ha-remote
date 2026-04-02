@@ -30,12 +30,12 @@ HEADERS = {
 # notify.alexa_media_kuche
 
 BUTTONS = [
-    {
-        "label": "Toggle Schreibtisch",
-        "service": "switch.toggle",
-        "entity_id":"switch.smart_plug_mini",
-        "group": "Schalter",
-    },
+    # {
+    #     "label": "Toggle Schreibtisch",
+    #     "service": "switch.toggle",
+    #     "entity_id":"switch.smart_plug_mini",
+    #     "group": "Schalter",
+    # },
     {
         "label": "Toggle Wohnzimmer",
         "service": "switch.toggle",
@@ -63,9 +63,39 @@ BUTTONS = [
         "group": "Rocky",
     },
     {
+        "label": "EG Vollreinigung",
+        "service": "button.press",
+        "entity_id":"button.roborock_s7_pro_ultra_eg_vollreinigung",
+        "group": "Rocky",
+    },
+    {
         "label": "DG Saugen und Wischen",
         "service": "button.press",
         "entity_id":"button.roborock_s7_pro_ultra_dg_saugen_wischen",
+        "group": "Rocky",
+    },
+    {
+        "label": "UG Saugen",
+        "service": "button.press",
+        "entity_id":"button.roborock_s7_pro_ultra_ug_saugen",
+        "group": "Rocky",
+    },
+    {
+        "label": "UG Saugen Wischen",
+        "service": "button.press",
+        "entity_id":"button.roborock_s7_pro_ultra_ug_saugen_wischen",
+        "group": "Rocky",
+    },
+    {
+        "label": "OG1 Saugen",
+        "service": "button.press",
+        "entity_id":"button.roborock_s7_pro_ultra_og1_saugen_wischen",
+        "group": "Rocky",
+    },
+    {
+        "label": "OG1 Vollreinigung",
+        "service": "button.press",
+        "entity_id":"button.roborock_s7_pro_ultra_og1_vollreinigung",
         "group": "Rocky",
     },
 
